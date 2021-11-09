@@ -1,32 +1,26 @@
-language: generic
 services:
   - docker
-
+env:
+  global:
+    - SHA=$(git rev-parse HEAD)
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
 before_install:
+  - opensll aes-256-cbc -K $encrypted_hash -iv $encrypted_hash -in service-account.json.enc -out service-account.json -d
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  - source $HOME/google-cloud-sdk/path.bash.inc
+  - gcloud components update kubectl
+  - gcloud auth activate_service_account --key-file service-account.json
+  - gcloud config set project project-name
+  - gcloud config set compute/zone us-central1-a
+  - gcloud container clusters get-credentials multi-cluster
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password
   - docker build -t lucaslazzaris/react-test -f ./client/Dockerfile.dev ./client
 
 script:
   - docker run -e CI=true lucaslazzaris/react-test npm test
 
-after_success:
-  - docker build -t lucaslazzaris/multi-client ./client
-  - docker build -t lucaslazzaris/multi-nginx ./nginx
-  - docker build -t lucaslazzaris/multi-server ./server
-  - docker build -t lucaslazzaris/multi-worker ./worker
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
-  - docker push lucaslazzaris/multi-client
-  - docker push lucaslazzaris/multi-nginx
-  - docker push lucaslazzaris/multi-server
-  - docker push lucaslazzaris/multi-worker
-
 deploy:
-  provider: elasticbeanstalk 
-  region: us-east-2
-  app: multi-docker
-  env: MultiDocker-env
-  bucket_name: elasticbeanstalk-us-east-2-705848586172
-  bucket_path: docker-multi'
+  provider: script
+  script: bash ./deploy.sh
   on:
     branch: master
-  access_key_id: $AWS_ACCESS_KEY
-  secret_access_key: $AWS_SECRET_KEY

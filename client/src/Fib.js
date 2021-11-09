@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import axios from 'axios';
 
 class Fib extends Component {
@@ -25,8 +25,17 @@ class Fib extends Component {
     });
   }
 
+  handleSubmit = async (event) => {
+    event.preventDefault();
+
+    await axios.post('/api/values', {
+      index: this.state.index,
+    });
+    this.setState({ index: '' });
+  };
+
   renderSeenIndexes() {
-    return this.state.seenIndexes.map(({ number }) => number).join(',');
+    return this.state.seenIndexes.map(({ number }) => number).join(', ');
   }
 
   renderValues() {
@@ -39,16 +48,8 @@ class Fib extends Component {
         </div>
       );
     }
+
     return entries;
-  }
-
-  handleSubmit = async (event) => {
-    event.preventDefault();
-
-    await axios.post('/api/values', {
-      index: this.state.index
-    });
-    this.setState({index: ''});
   }
 
   render() {
@@ -62,7 +63,8 @@ class Fib extends Component {
           />
           <button>Submit</button>
         </form>
-        <h3>Index I have seen:</h3>
+
+        <h3>Indexes I have seen:</h3>
         {this.renderSeenIndexes()}
 
         <h3>Calculated Values:</h3>
